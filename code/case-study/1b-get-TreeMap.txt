@@ -1,0 +1,159 @@
+// 1a-get-GEE.R: contains Google Earth Engine (GEE) scripts (labelled as Script 1 and 2) to extract forest metrics using the camera trap locations provided in `data/SSUSA_ABB_2020_Camera_Point_Locations_ESPG4326.csv`. Code percentage cover for hard/soft masting species (according to `FORTYPCD`), live canopy cover (`CANOPYPCT`), and above-ground standing deadwood biomass (`DRYBIO_D`) across 200m, 1km, and 5km buffers for each station.
+// Author: Michelle Pretorius
+
+// NOTE: Ensure `SSUSA_ABB_2020_Camera_Point_Locations_ESPG4326.csv` file is uploaded to your GEE Assets as a Table before running the script(s). You will also need to update directory paths to patch your GEE structure.
+
+//----------------------------------------------------------------------------
+Script 1: Extract percentage cover of hard and soft masting tree species
+//----------------------------------------------------------------------------
+
+// Define tree species groups
+var hardMast = [
+  501, 502, 503, 504, 505, 509, 510, 515, // Eastern Oaks/Hickories
+  922, 923, 924, 931, 933, 934, 935, 941, // Western Oaks/Tanoak
+  367, 185 // Whitebark Pine & Pinyon
+];
+
+var softMast = [
+  802, 905, // Cherries
+  507, 516, // Persimmon/Sassafras/Cherry mixes
+  961,      // Pacific Madrone
+  901, 902  // Aspen/Birch (Surrogates for berry understories)
+];
+
+// Load Dataset
+var TreeMap = ee.ImageCollection('USFS/GTAC/TreeMap/v2020')
+  .filter('year == "2020"')
+  .filter('study_area == "CONUS"') 
+  .first();
+
+var pts = ee.FeatureCollection('PATH/assets/SSUSA_ABB_2020_Camera_Point_Locations_ESPG4326'); // CHANGE PATH
+var bufferSizes = [200, 1000, 5000];
+
+// Create binary masks for mast types
+var fortyp = TreeMap.select('FORTYPCD');
+var hardMask = fortyp.remap(hardMast, ee.List.repeat(1, hardMast.length), 0).rename('hard_mast');
+var softMask = fortyp.remap(softMast, ee.List.repeat(1, softMast.length), 0).rename('soft_mast');
+
+// Combine into a multi-band image
+var mastImage = ee.Image.cat([hardMask, softMask]);
+
+// Run analysis for each buffer
+bufferSizes.forEach(function(bufferSize) {
+  var suffix = '_' + bufferSize;
+  
+  var ptsBuffer = pts.map(function(pt) {
+    return ee.Feature(pt).buffer(bufferSize);
+  });
+
+  // Calculate mean (which represents the proportion/percentage of pixels in the buffer)
+  var mastStats = mastImage.reduceRegions({
+    collection: ptsBuffer,
+    reducer: ee.Reducer.mean(),
+    scale: 30 
+  });
+
+var finalStats = mastStats.map(function(f) {
+    // Get raw values
+    var hardVal = f.get('hard_mast');
+    var softVal = f.get('soft_mast');
+    var forestVal = f.get('is_forest');
+    
+    // check for nulls
+    var hardProp = ee.Number(ee.Algorithms.If(hardVal, hardVal, 0));
+    var softProp = ee.Number(ee.Algorithms.If(softVal, softVal, 0));
+    var forestProp = ee.Number(ee.Algorithms.If(forestVal, forestVal, 0));
+    
+    var hardKey = 'perc_hard_mast' + suffix;
+    var softKey = 'perc_soft_mast' + suffix;
+    var forestKey = 'perc_total_forest' + suffix;
+    
+    // Set percentages
+    // Ensure Deployment_ID matches asset's ID exactly
+    return f.set(hardKey, hardProp.multiply(100))
+            .set(softKey, softProp.multiply(100))
+            .set(forestKey, forestProp.multiply(100))
+            .select(['Deployment_ID', hardKey, softKey, forestKey]);
+  });
+
+Export.table.toDrive({
+    collection: finalStats,
+    description: 'Mast_TreeMap_' + bufferSize + 'm',
+    folder: 'FOLDERNAME', // INPUT OWN FOLDER NAME
+    fileFormat: 'CSV'
+  });
+});
+
+//----------------------------------------------------------------------------
+Script 2: Extract (1) live canopy cover and (2) above-ground standing deadwood biomass
+//----------------------------------------------------------------------------
+var continuousBands = ['CANOPYPCT', 'DRYBIO_D'];
+var categoricalBands = ['FLDSZCD'];
+
+var TreeMap = ee.ImageCollection('USFS/GTAC/TreeMap/v2020')
+  .filter('year == "2020"')
+  .filter('study_area == "CONUS"') 
+  .first();
+
+var pts = ee.FeatureCollection('PATH/assets/SSUSA_ABB_2020_Camera_Point_Locations_ESPG4326'); // CHANGE PATH
+var bufferSizes = [200, 1000, 5000];
+
+bufferSizes.forEach(function(bufferSize) {
+  var suffix = '_' + bufferSize;
+  
+  var ptsBuffer = pts.map(function(pt) {
+    return ee.Feature(pt).buffer(bufferSize);
+  });
+
+  // Continuous Reduction
+  var statsReducers = ee.Reducer.mean().combine({
+    reducer2: ee.Reducer.stdDev(),
+    sharedInputs: true
+  }).combine({
+    reducer2: ee.Reducer.max(),
+    sharedInputs: true
+  });
+
+  var contResults = TreeMap.select(continuousBands).reduceRegions({
+    collection: ptsBuffer,
+    reducer: statsReducers,
+    scale: 30 
+  });
+
+  // Categorical Reduction
+  // Name this correctly here so don't have to touch it in the map function!
+  var modeReducer = ee.Reducer.mode().setOutputs([categoricalBands[0] + suffix]);
+
+  var finalStats = TreeMap.select(categoricalBands).reduceRegions({
+    collection: contResults,
+    reducer: modeReducer,
+    scale: 30 
+  });
+
+  // Final renaming (avoid double suffix)
+  var exportedStats = finalStats.map(function(f) {
+    var keys = f.propertyNames();
+    
+    var newKeys = keys.map(function(k) {
+      var sK = ee.String(k);
+      
+      // TARGET ONLY columns created by the continuous reducer:
+      // These will end in _mean, _stdDev, or _max
+      var isContinuousStat = sK.match('_(mean|stdDev|max)$').size().gt(0);
+      
+      // If it's a continuous stat, add the buffer suffix.
+      // If not (Deployment_ID, FLDSZCD_30, etc.), leave it alone!
+      return ee.Algorithms.If(isContinuousStat, sK.cat(suffix), sK);
+    });
+    
+    return f.select(keys, newKeys);
+  });
+
+  // Export
+  Export.table.toDrive({
+    collection: exportedStats,
+    description: 'Forest_TreeMap_' + bufferSize + 'm',
+    folder: 'FOLDERNAME', // INPUT OWN FOLDER NAME
+    fileFormat: 'CSV'
+  });
+});
