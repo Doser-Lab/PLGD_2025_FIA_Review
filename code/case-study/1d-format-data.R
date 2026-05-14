@@ -75,7 +75,7 @@ prism <- read.csv("data/SSUSA_ABB_2020_PRISM_Point_Locations.csv") %>%
 occ.covs <- occ_covs_forest %>%
   left_join(prism, by = "Deployment_ID") %>%
   left_join(read.csv("data/SSUSA_ABB_2020_Camera_Point_Locations_ESPG5070.csv") %>% 
-              mutate(strata = ifelse(X < -15000, "W", "E")) %>%
+              mutate(strata = ifelse(X < -150000, "W", "E")) %>%
               select(Deployment_ID, strata), by = "Deployment_ID") %>%
   arrange(Deployment_ID)
 
