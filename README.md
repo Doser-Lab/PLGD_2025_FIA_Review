@@ -32,28 +32,24 @@ This analysis was conducted using R (version 4.5.1). To ensure reproducibility, 
 
 Contains all code to format and extract data, fit models, and summarize results from the analysis of  American black bear (*Ursus americanus*) occurrence across CONUS using FIA-derived forest attributes ([TreeMap v2020](https://data.fs.usda.gov/geodata/rastergateway/treemap/)) extracted at multiple spatial scales (200m, 1km, 5km) paired with a continent-wide camera trap dataset ([Snapshot USA](https://www.snapshot-usa.org/)). Note that scripts should be run in the order indicated by the numbers in the file names.
 
-+ `1a-prep-data.R`: cleans the Snapshot USA 2020 deployment data (`SSUSA_Full_2020_Deployments.csv`), saves camera locations as `.csv` for use in subsequent scripts and creates the study map presented in manuscript.
++ `1a-prep-data.R`: cleans the Snapshot USA 2020 deployment data (needs to be downloaded; referenced as `SSUSA_Full_2020_Deployments.csv`), saves camera locations as `.csv` for use in subsequent scripts and creates the study map presented in manuscript.
 + `1b-get-GEE.txt`: contains two distinct Google Earth Engine (GEE) scripts to extract forest metrics across 200m, 1km, and 5km buffers for each station. These are not R code and must be run in the [Google Earth Engine Code Editor](https://code.earthengine.google.com/):
   + Script 1: extract percentage cover for hard/soft masting species (according to `FORTYPCD`). 
   + Script 2: extract live canopy cover (`CANOPYPCT`), and above-ground standing deadwood biomass (`DRYBIO_D`).
   + **Note:** Each script should be copied and run separately. Ensure you have uploaded the camera point locations (`data/SSUSA_ABB_2020_Camera_Point_Locations.csv`) as an Asset in GEE before running.
 + `1c-get-covariates.R`: extracts data from PRISM for use as auxiliary variables in the analysis.
-+ `1d-format-data.R`: formats Snapshot USA black bear occurrence data (from `SSUSA_Full_2020_Sequences.csv`) and covariates into the necessary format for fitting the single-species occupancy models in `spOccupancy`.
++ `1d-format-data.R`: formats Snapshot USA black bear occurrence data (needs to be downloaded; referenced as`SSUSA_Full_2020_Sequences.csv`) and covariates into the necessary format for fitting the single-species occupancy models in `spOccupancy`.
 + `2a-initial-model.R`: runs a smaller occupancy models for each scale (200m, 1km, 5km) and extracts initial values for each scale for use in `2b-main-model.R`
 + `2b-main-model.R`: runs the full occupancy models for each scale (200m, 1km, 5km), compares models using WAIC and saves results for use in `3a-visualisations.R`.
 + `3a-visualisations.R`: summarize results from the black bear case study and generate all case study relevant figures included in the manuscript.  
 
 ### [data](./data/)
 
-Contains data used in Systematic Literature Review and the American black bear distribution case study. Note that  Snapshot USA full deployment and sequence records for 2020 are too large to store on GitHub. These can be downloaded from [WildlifeInsights](https://app.wildlifeinsights.org/initiatives/2000156/Snapshot-USA). PRISM data can be generated with the script `1c-get-covariates.R` in the `code/` directory.  
+Contains data used in Systematic Literature Review and the American black bear distribution case study. Note that  Snapshot USA full deployment and sequence records for 2020 are too large to store on GitHub. These can be downloaded from [WildlifeInsights](https://app.wildlifeinsights.org/initiatives/2000156/Snapshot-USA). Other required data, including PRISM and point locations, can be generated with the scripts in the `code/` directory. 
 
 + `Review_Metadata.csv`: meta data for 138 studies identified in systematic literature review. Metadata includes Article title, DOI (NA where DOI not present), Publication type	Publication year,	Taxa, Common names, Number of species (NA if the total number of species was not quantified),	Single or Multiple species, Number of US States, FIA Region list, FIA Region grouped, Topic, Data source, and Data summary level. 
 + `Forest_TreeMap_[scale].csv`: Forest variables extracted from TreeMap (see `1b-get-GEE.txt` for GEE scripts) on live canopy cover (`CANOPYPCT`), and above-ground standing deadwood biomass (`DRYBIO_D`) across three scales: 200m, 1000m, and 5000m. (e.g., `Forest_TreeMap_200.csv`, etc.)
 + `Mast_TreeMap_[scale].csv`: Forest variables extracted from TreeMap (see `1b-get-GEE.txt` for GEE scripts) on hard/soft masting species (according to `FORTYPCD`) across three scales: 200m, 1000m, and 5000m. (e.g., `Mast_TreeMap_200.csv`, etc.)
-+ `SSUSA_ABB_2020_Camera_Point_Locations_ESPG4326.csv`: GPS locations (in EPSG:4326 WGS 84) of Snapshot USA camera stations used in analyses. Filtering of GPS points conducted in `1a-prep-data.R`.
-+ `SSUSA_ABB_2020_Camera_Point_Locations_ESPG5070.csv`: GPS locations (in planar EPSG:5070 - NAD83/Conus Albers) of Snapshot USA camera stations used in analyses. Filtering of GPS points conducted in `1a-prep-data.R`.
-+ `SSUSA_ABB_2020_PRISM_Point_Locations.csv`: GPS locations (in planar EPSG:5070 - NAD83/Conus Albers) of Snapshot USA camera stations with associated mean monthly temperature from PRISM across the survey period. Data produced in `1d-format-data.R`.
-+ `SSUSA_ABB_2020_PGOcc_Data.List.rda`: complete data object needed for fitting both the initial (`2a-initial-model.R`) and full (`2b-main-model.R`) occupancy model using `spOccupancy`.
 + `IUCN_range_map_ABB/`: folder containing spatial files for the American black bear [IUCN](https://www.iucnredlist.org/species/41687/114251609) geographic range.
 
 ### [results](./results/)

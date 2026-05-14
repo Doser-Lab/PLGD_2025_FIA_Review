@@ -8,3 +8,6 @@ data/PRISM/
 SSUSA_Full_2020_Deployments.csv
 SSUSA_Full_2020_Sequences.csv
 SSUSA_ABB_2020_PGOcc_Data.List.RData
+SSUSA_ABB_2020_Camera_Point_Locations_ESPG4326.csv
+SSUSA_ABB_2020_Camera_Point_Locations_ESPG5070.csv
+SSUSA_ABB_2020_PRISM_Point_Locations.csv
