@@ -2,6 +2,7 @@
 
 ### [Michelle Pretorius](https://www.doserlab.com/), [Angela L. Larsen-Gray](https://www.ncasi.org/), [Jeffrey W. Doser](https://www.doserlab.com/)
 
+
 <!-- # ### Forest Ecology and Management -->
 
 <!-- # ### Code/Data DOI: -->
@@ -9,6 +10,7 @@
 ### Please contact the first author for questions: Michelle Pretorius (mpretor@ncsu.edu)
 
 ---------------------------------
+
 
 <!-- ## Abstract -->
 
