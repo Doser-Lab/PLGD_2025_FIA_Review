@@ -38,7 +38,7 @@ ggplot(pub.years, aes(x=Publication_year, y=n.pubs)) +
   scale_y_continuous(expand=c(0,0)) +
   scale_x_continuous(breaks=seq(1998, 2025, 1)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        text = element_text(size = 16)) +
+        text = element_text(family = "LM Roman 10", size = 18)) +
   xlab("Year") +
   ylab("Number of publications")
 
